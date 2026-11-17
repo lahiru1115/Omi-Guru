@@ -2,12 +2,20 @@
 // applyAction, and runs the automatic steps (deals, bot turns, trick collection) on timers paced by
 // the speed setting (SPEC §4.6). Bots only ever see getPlayerView(state, seat).
 //
+// Practice mode (SPEC §6.1) adds the coach aids: hints, feedback after each human play, bot
+// explanations, undo, show all cards and the card tracker. Practice games are never saved, so they
+// can't overwrite the Real game in the single save slot.
+//
 // Built by createGameStore(deps) so tests can inject fake timers, storage and settings;
 // the app uses the default instance through useGameStore.
 import { useStore } from 'zustand';
 import { createStore, type StoreApi } from 'zustand/vanilla';
-import type { Bot } from '../ai/bot';
+import type { Bot, Decision } from '../ai/bot';
 import { createBot as defaultCreateBot } from '../ai/botFactory';
+import { botReasonLines, hintBubble, reviewBubble } from '../coach/feedback';
+import { getHint } from '../coach/hintEngine';
+import type { CoachMessage } from '../coach/reasons';
+import { reviewMove } from '../coach/review';
 import { getLegalCards, ledSuit } from '../engine/rules';
 import { applyAction, createGame } from '../engine/stateMachine';
 import type {
@@ -17,21 +25,31 @@ import type {
   GameSettings,
   GameState,
   Seat,
+  Speed,
   Suit,
   Trick,
 } from '../engine/types';
 import { getPlayerView } from '../engine/view';
 import { BOT_DELAY_MS, COLLECT_MS, TRICK_HOLD_MS } from './pacing';
-import {
-  clearSavedGame,
-  loadSavedGame,
-  saveGame,
-  type GameMode,
-  type SavedGame,
-} from './savedGame';
+import { clearSavedGame, loadSavedGame, saveGame, type SavedGame } from './savedGame';
 import { getSettings as defaultGetSettings } from './settingsStore';
 
 export const HUMAN: Seat = 0;
+
+/** Real game (no help, saved) or Practice (coach aids, not saved). */
+export type PlayMode = 'real' | 'practice';
+
+/** Practice bots and speed (SPEC §6.1, §4.6). */
+export const PRACTICE_DIFFICULTY: BotDifficulty = 'medium';
+export const PRACTICE_SPEED: Speed = 'slow';
+
+/** The coach bubble in Practice. Empty `lines` on a bot bubble means the bot gave no reason. */
+export type CoachBubbleData = {
+  kind: 'hint' | 'review' | 'bot';
+  header?: CoachMessage;
+  lines: CoachMessage[];
+  nonce: number;
+};
 
 export type GameToast =
   | { kind: 'mustFollowSuit'; suit: Suit; nonce: number }
@@ -42,7 +60,7 @@ export type HeldTrick = { trick: Trick & { winner: Seat }; collecting: boolean }
 
 export type GameStoreData = {
   game: GameState | null;
-  mode: GameMode;
+  mode: PlayMode;
   difficulty: BotDifficulty;
   seed: number;
   raisedCardId: CardId | null;
@@ -50,12 +68,21 @@ export type GameStoreData = {
   toast: GameToast | null;
   heldTrick: HeldTrick | null;
   hasSave: boolean;
+  // Practice only (these stay empty in a Real game):
+  hint: Decision | null;
+  coach: CoachBubbleData | null;
+  /** Why each bot card of this round was played, by card id. */
+  botReasons: Partial<Record<CardId, CoachMessage[]>>;
+  /** The states just before each human card of this round (newest last). */
+  undoStack: GameState[];
+  showAll: boolean;
+  trackerOpen: boolean;
 };
 
 export type GameStoreActions = {
   /**
-   * Starts a new Real game (replaces any saved game). The difficulty defaults to the
-   * botDifficulty setting.
+   * Starts a new game. A Real game replaces any saved game; its difficulty defaults to the
+   * botDifficulty setting. Practice defaults to Medium and is never saved.
    */
   newGame: (options?: NewGameOptions) => void;
   /** Loads the saved game. Returns false if there is none. */
@@ -64,12 +91,19 @@ export type GameStoreActions = {
   tapCard: (cardId: CardId) => void;
   tapTrickArea: () => void;
   nextRound: () => void;
-  /** Leaves the table. The game stays saved (unless it is over). */
+  /** Leaves the table. A Real game stays saved (unless it is over). */
   exitToHome: () => void;
   dismissToast: () => void;
+  // Practice aids. Each one does nothing in a Real game.
+  requestHint: () => void;
+  undo: () => void;
+  toggleShowAll: () => void;
+  toggleTracker: () => void;
+  showBotReason: (cardId: CardId) => void;
+  dismissCoach: () => void;
 };
 
-export type NewGameOptions = { seed?: number; difficulty?: BotDifficulty };
+export type NewGameOptions = { seed?: number; difficulty?: BotDifficulty; mode?: PlayMode };
 
 export type GameStore = GameStoreData & GameStoreActions;
 
@@ -108,6 +142,15 @@ function botSeed(seed: number, seat: Seat): number {
   return (seed + Math.imul(seat, 0x9e3779b1)) >>> 0;
 }
 
+const PRACTICE_RESET = {
+  hint: null,
+  coach: null,
+  botReasons: {},
+  undoStack: [],
+  showAll: false,
+  trackerOpen: false,
+} satisfies Partial<GameStoreData>;
+
 export function createGameStore(overrides: Partial<GameStoreDeps> = {}): StoreApi<GameStore> {
   const deps: GameStoreDeps = { ...defaultDeps, ...overrides };
   let timer: TimerHandle | null = null;
@@ -140,14 +183,23 @@ export function createGameStore(overrides: Partial<GameStoreDeps> = {}): StoreAp
       return bot;
     }
 
+    function isPractice(): boolean {
+      return get().mode === 'practice';
+    }
+
+    function speed(): Speed {
+      return isPractice() ? PRACTICE_SPEED : deps.getSettings().speed;
+    }
+
     function persist(game: GameState): void {
+      if (isPractice()) return; // Practice games are never saved
       if (game.phase === 'GAME_OVER') {
         deps.storage.clear();
         set({ hasSave: false });
         return;
       }
-      const { mode, difficulty, seed } = get();
-      deps.storage.save({ v: 1, mode, difficulty, seed, state: game });
+      const { difficulty, seed } = get();
+      deps.storage.save({ v: 1, mode: 'real', difficulty, seed, state: game });
       set({ hasSave: true });
     }
 
@@ -166,7 +218,14 @@ export function createGameStore(overrides: Partial<GameStoreDeps> = {}): StoreAp
           heldTrick = { trick: { ...trick, winner: trick.winner }, collecting: false };
         }
       }
-      set({ game: next, raisedCardId: null, heldTrick });
+      // Undo goes back at most to the start of the current round (SPEC §6.1).
+      const newRound = action.type === 'START_ROUND' || action.type === 'NEXT_ROUND';
+      set({
+        game: next,
+        raisedCardId: null,
+        heldTrick,
+        ...(newRound ? { undoStack: [], botReasons: {} } : {}),
+      });
       persist(next);
       advance();
     }
@@ -175,12 +234,12 @@ export function createGameStore(overrides: Partial<GameStoreDeps> = {}): StoreAp
     function advance(): void {
       const { game, heldTrick } = get();
       if (!game) return;
-      const speed = deps.getSettings().speed;
-      const delay = BOT_DELAY_MS[speed];
+      const pace = speed();
+      const delay = BOT_DELAY_MS[pace];
 
       if (heldTrick) {
         if (!heldTrick.collecting) {
-          schedule(TRICK_HOLD_MS[speed], () => {
+          schedule(TRICK_HOLD_MS[pace], () => {
             set({ heldTrick: { ...heldTrick, collecting: true } });
             advance();
           });
@@ -219,8 +278,17 @@ export function createGameStore(overrides: Partial<GameStoreDeps> = {}): StoreAp
           schedule(delay, () => {
             const g = get().game;
             if (!g) return;
-            const { cardId } = botFor(seat).chooseCard(getPlayerView(g, seat));
-            dispatch({ type: 'PLAY_CARD', seat, cardId });
+            const view = getPlayerView(g, seat);
+            const decision = botFor(seat).chooseCard(view);
+            if (isPractice()) {
+              set({
+                botReasons: {
+                  ...get().botReasons,
+                  [decision.cardId]: botReasonLines(view, decision),
+                },
+              });
+            }
+            dispatch({ type: 'PLAY_CARD', seat, cardId: decision.cardId });
           });
           return;
         }
@@ -237,21 +305,34 @@ export function createGameStore(overrides: Partial<GameStoreDeps> = {}): StoreAp
     }
 
     function playHumanCard(cardId: CardId): void {
+      const game = get().game;
+      if (game && isPractice()) {
+        const { practice } = deps.getSettings();
+        const update: Partial<GameStoreData> = { hint: null, coach: null };
+        if (practice.autoFeedback) {
+          const viewBefore = getPlayerView(game, HUMAN);
+          const content = reviewBubble(viewBefore, cardId, reviewMove(viewBefore, cardId));
+          update.coach = { kind: 'review', ...content, nonce: ++nonce };
+        }
+        if (practice.allowUndo) update.undoStack = [...get().undoStack, game];
+        set(update);
+      }
       dispatch({ type: 'PLAY_CARD', seat: HUMAN, cardId });
     }
 
-    function start(game: GameState, difficulty: BotDifficulty, seed: number): void {
+    function start(game: GameState, difficulty: BotDifficulty, seed: number, mode: PlayMode): void {
       cancelTimer();
       setupBots(difficulty, seed);
       set({
         game,
-        mode: 'real',
+        mode,
         difficulty,
         seed,
         raisedCardId: null,
         shake: null,
         toast: null,
         heldTrick: null,
+        ...PRACTICE_RESET,
       });
     }
 
@@ -265,11 +346,15 @@ export function createGameStore(overrides: Partial<GameStoreDeps> = {}): StoreAp
       toast: null,
       heldTrick: null,
       hasSave: deps.storage.load() !== null,
+      ...PRACTICE_RESET,
 
       newGame: (options = {}) => {
         const gameSeed = (options.seed ?? deps.newSeed()) >>> 0;
-        const difficulty = options.difficulty ?? deps.getSettings().botDifficulty;
-        start(createGame(deps.getSettings(), gameSeed), difficulty, gameSeed);
+        const mode = options.mode ?? 'real';
+        const difficulty =
+          options.difficulty ??
+          (mode === 'practice' ? PRACTICE_DIFFICULTY : deps.getSettings().botDifficulty);
+        start(createGame(deps.getSettings(), gameSeed), difficulty, gameSeed, mode);
         persist(get().game as GameState);
         advance();
       },
@@ -280,7 +365,7 @@ export function createGameStore(overrides: Partial<GameStoreDeps> = {}): StoreAp
           set({ hasSave: false });
           return false;
         }
-        start(saved.state, saved.difficulty, saved.seed);
+        start(saved.state, saved.difficulty, saved.seed, 'real');
         set({ hasSave: true });
         advance();
         return true;
@@ -299,6 +384,8 @@ export function createGameStore(overrides: Partial<GameStoreDeps> = {}): StoreAp
         if (!hand.some((c) => c.id === cardId)) return;
         const legal = getLegalCards(hand, game.round.currentTrick);
         if (!legal.some((c) => c.id === cardId)) {
+          // Practice: illegal cards are dimmed and can't be played (SPEC §2.6).
+          if (isPractice()) return;
           // Real game (SPEC §2.6): no dimming, so explain why the card can't be played.
           const suit = ledSuit(game.round.currentTrick);
           set({
@@ -330,10 +417,60 @@ export function createGameStore(overrides: Partial<GameStoreDeps> = {}): StoreAp
         cancelTimer();
         const { game } = get();
         if (game) persist(game);
-        set({ game: null, heldTrick: null, raisedCardId: null, shake: null, toast: null });
+        set({
+          game: null,
+          heldTrick: null,
+          raisedCardId: null,
+          shake: null,
+          toast: null,
+          ...PRACTICE_RESET,
+        });
       },
 
       dismissToast: () => set({ toast: null }),
+
+      requestHint: () => {
+        const game = isHumanTurnToPlay();
+        if (!game || !isPractice()) return;
+        const view = getPlayerView(game, HUMAN);
+        const hint = getHint(view);
+        set({ hint, coach: { kind: 'hint', ...hintBubble(view, hint), nonce: ++nonce } });
+      },
+
+      undo: () => {
+        const { undoStack, game } = get();
+        if (!isPractice() || !game || !deps.getSettings().practice.allowUndo) return;
+        if (game.phase !== 'PLAYING' && game.phase !== 'ROUND_END') return;
+        const previous = undoStack[undoStack.length - 1];
+        if (!previous) return;
+        cancelTimer();
+        set({
+          game: previous,
+          undoStack: undoStack.slice(0, -1),
+          heldTrick: null,
+          raisedCardId: null,
+          hint: null,
+          coach: null,
+        });
+        advance();
+      },
+
+      toggleShowAll: () => {
+        if (isPractice()) set({ showAll: !get().showAll });
+      },
+
+      toggleTracker: () => {
+        if (isPractice()) set({ trackerOpen: !get().trackerOpen });
+      },
+
+      showBotReason: (cardId) => {
+        if (!isPractice()) return;
+        const lines = get().botReasons[cardId];
+        if (!lines) return;
+        set({ coach: { kind: 'bot', lines, nonce: ++nonce } });
+      },
+
+      dismissCoach: () => set({ coach: null }),
     };
   });
 }

@@ -113,6 +113,48 @@
   opacity: 0.75;
 }
 
+/* Learn panel: Lessons or Practice */
+.home__learn {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.home__panel-title {
+  margin: 0 0 4px;
+  font-size: 1.25rem;
+  text-align: center;
+}
+
+.home__choice {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-height: 64px;
+  padding: 10px 16px;
+  border: 2px solid var(--color-cream-faint);
+  border-radius: var(--radius);
+  background: rgb(0 0 0 / 0.18);
+  text-align: left;
+  cursor: pointer;
+}
+
+.home__choice--primary {
+  border-color: var(--color-gold);
+}
+
+.home__choice-title {
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+
+.home__choice-desc {
+  font-size: 0.9375rem;
+  color: rgb(246 239 220 / 0.8);
+}
+
 .home__confirm {
   display: flex;
   flex-direction: column;

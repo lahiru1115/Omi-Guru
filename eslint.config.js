@@ -7,7 +7,14 @@ import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
 // CLAUDE.md architecture rules 1 and 2: engine, ai and coach are pure, deterministic TypeScript.
-const PURE_CODE = ['src/engine/**/*.ts', 'src/ai/**/*.ts', 'src/coach/**/*.ts'];
+// The lesson runner and the lesson data follow the same rules.
+const PURE_CODE = [
+  'src/engine/**/*.ts',
+  'src/ai/**/*.ts',
+  'src/coach/**/*.ts',
+  'src/lessons/**/*.ts',
+  'src/content/lessons/**/*.ts',
+];
 const PURE_IMPORT_MESSAGE =
   'src/engine, src/ai and src/coach must stay pure TypeScript: no React, DOM, Zustand or storage.';
 const PURE_GLOBAL_MESSAGE =
