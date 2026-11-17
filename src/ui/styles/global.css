@@ -1,0 +1,82 @@
+:root {
+  /* Table felt. The table green is also the PWA theme colour in M5. */
+  --color-felt: #0b5d3b;
+  --color-felt-deep: #073d27;
+  --color-felt-light: #12774d;
+
+  --color-cream: #f6efdc;
+  --color-cream-faint: rgb(246 239 220 / 0.35);
+  --color-gold: #e8b63e;
+  --color-ink: #17201b;
+  --color-suit-red: #c62f2f;
+  --color-suit-black: #17201b;
+
+  /* Noto Sans Sinhala is loaded as a Sinhala-only subset, so Latin text uses the system font. */
+  --font-body: 'Noto Sans Sinhala', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+
+  --tap-min: 44px;
+  --radius: 12px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  min-height: 100dvh;
+  font-family: var(--font-body);
+  /* Sinhala glyphs are tall: keep line height at 1.5 or more (SPEC §9.1). */
+  line-height: 1.6;
+  color: var(--color-cream);
+  background-color: var(--color-felt);
+  background-image: radial-gradient(
+    ellipse at 50% 35%,
+    var(--color-felt-light) 0%,
+    var(--color-felt) 55%,
+    var(--color-felt-deep) 100%
+  );
+  background-attachment: fixed;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+#root {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh;
+  /* Keep content clear of the iPhone notch and home bar. */
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom)
+    env(safe-area-inset-left);
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  touch-action: manipulation;
+}
+
+:focus-visible {
+  outline: 3px solid var(--color-gold);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

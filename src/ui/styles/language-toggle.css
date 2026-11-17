@@ -1,0 +1,26 @@
+.lang-toggle {
+  display: inline-flex;
+  padding: 3px;
+  border: 1px solid var(--color-cream-faint);
+  border-radius: 999px;
+  background: rgb(0 0 0 / 0.25);
+}
+
+.lang-toggle__option {
+  min-width: var(--tap-min);
+  min-height: var(--tap-min);
+  padding: 0 14px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-cream);
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.5;
+  cursor: pointer;
+}
+
+.lang-toggle__option[aria-pressed='true'] {
+  background: var(--color-cream);
+  color: var(--color-felt-deep);
+}
