@@ -1,40 +1,41 @@
-// App settings, saved to omi.settings.v1.
-// M0 holds only the language. Later milestones grow this into the full GameSettings
-// (SPEC §10.1). Saved data is always merged over the defaults, so older saves still load.
+// App settings (the full GameSettings, SPEC §10.1), saved to omi.settings.v1.
+// Saved data is always merged over the defaults field by field, so older or partial saves still load
+// and a bad value falls back to its default instead of breaking the app.
 import { create } from 'zustand';
-import { DEFAULT_LANGUAGE, isLanguage, type Language } from '../content/i18n/t';
+import type { Language } from '../content/i18n/t';
+import { DEFAULT_GAME_SETTINGS, type GameSettings } from '../engine/types';
 import { loadJSON, saveJSON, STORAGE_KEYS } from '../storage/persist';
+import { mergeSettings } from './mergeSettings';
 
-export type Settings = {
-  language: Language;
-};
+export type Settings = GameSettings;
 
 type SettingsActions = {
   setLanguage: (language: Language) => void;
+  updateSettings: (patch: Partial<GameSettings>) => void;
 };
 
-export const DEFAULT_SETTINGS: Settings = {
-  language: DEFAULT_LANGUAGE,
-};
+export const DEFAULT_SETTINGS: Settings = DEFAULT_GAME_SETTINGS;
 
-function loadSettings(): Settings {
-  const saved = loadJSON(STORAGE_KEYS.settings);
-  if (typeof saved !== 'object' || saved === null) return DEFAULT_SETTINGS;
-  const language = 'language' in saved ? saved.language : undefined;
-  return {
-    ...DEFAULT_SETTINGS,
-    language: isLanguage(language) ? language : DEFAULT_SETTINGS.language,
-  };
-}
+export { mergeSettings };
 
-function toSaved(state: Settings): Settings {
-  return { language: state.language };
+/** Only the data fields, without the store's action functions. */
+export function toSaved(state: Settings): Settings {
+  return mergeSettings(state);
 }
 
 export const useSettingsStore = create<Settings & SettingsActions>()((set, get) => ({
-  ...loadSettings(),
+  ...mergeSettings(loadJSON(STORAGE_KEYS.settings)),
   setLanguage: (language) => {
     set({ language });
     saveJSON(STORAGE_KEYS.settings, toSaved(get()));
   },
+  updateSettings: (patch) => {
+    set(patch);
+    saveJSON(STORAGE_KEYS.settings, toSaved(get()));
+  },
 }));
+
+/** The current settings as plain data (for non-React callers such as the game store). */
+export function getSettings(): Settings {
+  return toSaved(useSettingsStore.getState());
+}

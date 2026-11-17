@@ -112,3 +112,20 @@
   cursor: not-allowed;
   opacity: 0.75;
 }
+
+.home__confirm {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  padding: 16px;
+  border: 2px solid var(--color-gold);
+  border-radius: var(--radius);
+  background: rgb(0 0 0 / 0.25);
+}
+
+.home__confirm-text {
+  margin: 0;
+  font-weight: 700;
+  text-align: center;
+}
