@@ -110,10 +110,12 @@
   flex: 1;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: auto minmax(0, 1fr) auto auto;
+  grid-template-rows: auto minmax(0, 1fr) auto auto auto auto;
   grid-template-areas:
     'top'
     'felt'
+    'coach'
+    'tools'
     'me'
     'hand';
   width: 100%;
@@ -367,9 +369,23 @@
   cursor: default;
 }
 
-.trick:not(:disabled) {
-  cursor: pointer;
+.trick--can-play {
   border-color: rgb(232 182 62 / 0.6);
+}
+
+/* The whole circle is the "play here" button; cards sit on top of it. */
+.trick__play {
+  position: absolute;
+  inset: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  cursor: default;
+}
+
+.trick__play:not(:disabled) {
+  cursor: pointer;
 }
 
 .trick__card {
@@ -409,6 +425,25 @@
 
 .trick__card--winner {
   z-index: 1;
+}
+
+/* Practice: tap a bot's card to see why it was played. */
+.trick__card--tappable {
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.trick__card--tappable .card {
+  outline: 2px dotted rgb(232 182 62 / 0.75);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+.trick__card--highlight .card {
+  filter: drop-shadow(0 0 8px var(--color-gold)) drop-shadow(0 0 3px var(--color-gold));
 }
 
 .trick__card--winner .card {
@@ -526,8 +561,23 @@
   animation: shake 420ms ease-in-out;
 }
 
-.hand--active .hand__card:not(.hand__card--raised):hover {
+.hand--active .hand__card:not(.hand__card--raised):not(:disabled):hover {
   transform: translateY(-6px);
+}
+
+/* Practice: illegal cards are dimmed and can't be tapped (SPEC §2.6). */
+.hand__card--dimmed .card {
+  filter: brightness(0.55) saturate(0.6);
+}
+
+/* Practice hint / lesson highlight */
+.hand__card--hint {
+  transform: translateY(-10px);
+}
+
+.hand__card--hint .card {
+  filter: drop-shadow(0 0 7px var(--color-gold)) drop-shadow(0 0 3px var(--color-gold));
+  animation: hint-glow 1.4s ease-in-out infinite alternate;
 }
 
 /* Toast above the hand */
@@ -616,6 +666,362 @@
   font-family: system-ui, sans-serif;
   font-size: 1.375rem;
   line-height: 1;
+}
+
+/* With the trump hint the dialog is taller: anchor it to the top of the felt so it can grow down
+   over the tools row while the 4 cards in the hand stay visible below it. */
+.trump-dialog--hint {
+  top: 4px;
+  transform: translateX(-50%);
+  padding: 10px 12px;
+}
+
+.trump-dialog--hint .trump-dialog__suit {
+  min-height: 46px;
+}
+
+/* Lessons: in the page flow, in place of the table. */
+.trump-dialog--inline {
+  position: relative;
+  inset: auto;
+  max-height: none;
+  margin: 4px auto;
+  transform: none;
+}
+
+.trump-dialog__note {
+  margin: 0 0 8px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: rgb(232 182 62 / 0.16);
+  font-size: 0.9375rem;
+  font-weight: 700;
+}
+
+/* Trump hint (SPEC §5.5): the suggestion plus every suit's score as bars */
+.trump-hint {
+  margin: 0 0 10px;
+  text-align: left;
+}
+
+.trump-hint__text {
+  margin: 0 0 6px;
+  font-size: 0.875rem;
+  line-height: 1.55;
+}
+
+.trump-hint__bars {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.trump-hint__row {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8125rem;
+}
+
+.trump-hint__pip {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  background: var(--color-card);
+  font-family: system-ui, sans-serif;
+  line-height: 1;
+}
+
+.trump-hint__track {
+  height: 10px;
+  border-radius: 999px;
+  background: rgb(0 0 0 / 0.3);
+  overflow: hidden;
+}
+
+.trump-hint__fill {
+  display: block;
+  height: 100%;
+  min-width: 2px;
+  border-radius: 999px;
+  background: var(--color-cream-faint);
+}
+
+.trump-hint__fill--best {
+  background: var(--color-gold);
+}
+
+.trump-hint__score {
+  font-variant-numeric: tabular-nums;
+  color: rgb(246 239 220 / 0.85);
+  white-space: nowrap;
+}
+
+/* ---------- Practice: mode label, tools, coach bubble, tracker, face-up seats ---------- */
+
+/* In portrait the side column's children are ordinary grid items of the table. */
+.table__side {
+  display: contents;
+}
+
+.table__mode {
+  padding: 2px 12px;
+  border: 1px solid var(--color-gold);
+  border-radius: 999px;
+  color: var(--color-gold);
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.table__coach {
+  grid-area: coach;
+  padding: 0 4px 4px;
+}
+
+.table__tools {
+  grid-area: tools;
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  padding: 2px 4px 4px;
+}
+
+.tool-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: var(--tap-min);
+  min-height: var(--tap-min);
+  padding: 0 12px;
+  border: 1px solid var(--color-cream-faint);
+  border-radius: 999px;
+  background: rgb(0 0 0 / 0.22);
+  font-size: 1.125rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.tool-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.tool-btn--on {
+  border-color: var(--color-gold);
+  background: rgb(232 182 62 / 0.22);
+}
+
+/* Portrait phones: icons only (labels stay as aria-label/title). */
+.tool-btn__label {
+  display: none;
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.coach {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 40px 8px 10px;
+  border: 2px solid var(--color-gold);
+  border-radius: 14px;
+  background: rgb(7 45 29 / 0.95);
+  box-shadow: 0 6px 18px rgb(0 0 0 / 0.4);
+  animation: pop-in 200ms var(--ease-out) both;
+  cursor: pointer;
+}
+
+.coach--pinned {
+  cursor: default;
+}
+
+.coach__icon {
+  flex: none;
+  font-size: 1.125rem;
+  line-height: 1.5;
+}
+
+.coach__text {
+  min-width: 0;
+  font-size: 0.9375rem;
+  line-height: 1.55;
+}
+
+.coach__text p {
+  margin: 0;
+}
+
+.coach__header {
+  font-weight: 800;
+}
+
+.coach__keep {
+  margin-top: 2px !important;
+  font-size: 0.75rem;
+  color: rgb(246 239 220 / 0.6);
+}
+
+.coach__close {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: var(--tap-min);
+  height: var(--tap-min);
+  padding: 0;
+  border: 0;
+  background: none;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+/* Tracker: a bottom sheet on phones, a panel in the right column on PC */
+.table__tracker {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 6;
+  padding: 0 8px calc(8px + env(safe-area-inset-bottom));
+  animation: sheet-up 220ms var(--ease-out) both;
+}
+
+.tracker {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 10px 12px 12px;
+  border: 2px solid var(--color-gold);
+  border-radius: 16px;
+  background: rgb(7 45 29 / 0.97);
+  box-shadow: 0 -6px 24px rgb(0 0 0 / 0.5);
+}
+
+.tracker__head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: var(--tap-min);
+}
+
+.tracker__title {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.tracker__trumps {
+  padding: 0 10px;
+  border-radius: 999px;
+  background: rgb(232 182 62 / 0.2);
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.tracker__close {
+  margin-left: auto;
+  width: var(--tap-min);
+  height: var(--tap-min);
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+
+.tracker__grid {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 3px;
+  table-layout: fixed;
+}
+
+.tracker__suit {
+  width: 30px;
+  border-radius: 6px;
+  background: var(--color-card);
+  font-family: system-ui, sans-serif;
+  font-size: 1.125rem;
+  line-height: 1.6;
+}
+
+.tracker__row--trump .tracker__suit {
+  box-shadow: 0 0 0 2px var(--color-gold);
+}
+
+.tracker__cell {
+  position: relative;
+  height: 32px;
+  border-radius: 6px;
+  background: var(--color-card);
+  color: var(--color-ink);
+  font-family: system-ui, sans-serif;
+  font-size: 0.875rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.tracker__cell--played {
+  background: rgb(246 239 220 / 0.15);
+  color: rgb(246 239 220 / 0.35);
+  text-decoration: line-through;
+}
+
+.tracker__cell--mine {
+  box-shadow: inset 0 -3px 0 #3b82c4;
+}
+
+.tracker__cell--master {
+  box-shadow: 0 0 0 2px var(--color-gold);
+}
+
+.tracker__cell--highlight {
+  background: var(--color-gold);
+}
+
+.tracker__star {
+  position: absolute;
+  top: -7px;
+  right: -3px;
+  color: var(--color-gold);
+  font-size: 0.75rem;
+  text-shadow: 0 0 2px #000;
+}
+
+.tracker__legend {
+  margin: 6px 0 0;
+  font-size: 0.75rem;
+  color: rgb(246 239 220 / 0.7);
+}
+
+/* Show all cards: small face-up cards */
+.seat__faceup {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 2px;
+  max-width: calc(var(--back-w) * 4.6);
+}
+
+.seat--top .seat__faceup {
+  max-width: none;
+}
+
+.seat__mini {
+  width: calc(var(--back-w) * 1.05);
+  height: auto;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 /* ---------- Modals ---------- */
@@ -883,22 +1289,50 @@
 
   .table {
     max-width: 1180px;
-    grid-template-columns: minmax(0, 1fr) 300px;
-    grid-template-rows: minmax(0, 1fr) auto auto;
+    grid-template-columns: minmax(0, 1fr) 320px;
+    grid-template-rows: minmax(0, 1fr) auto auto auto;
     grid-template-areas:
-      'felt top'
-      'me top'
-      'hand top';
+      'felt side'
+      'tools side'
+      'me side'
+      'hand side';
     column-gap: 16px;
     padding: 12px 16px 12px;
   }
 
+  /* The right column: info panel, then the coach bubble and the tracker (SPEC §8.2). */
+  .table__side {
+    grid-area: side;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-height: 0;
+    overflow-y: auto;
+  }
+
   .table__top {
-    align-self: stretch;
     gap: 12px;
     padding: 12px;
     border-radius: 16px;
     background: rgb(0 0 0 / 0.16);
+  }
+
+  .table__coach {
+    padding: 0;
+  }
+
+  .table__tracker {
+    position: static;
+    padding: 0;
+    animation: none;
+  }
+
+  .tracker {
+    box-shadow: none;
+  }
+
+  .tool-btn__label {
+    display: inline;
   }
 
   .table__info {
@@ -1006,6 +1440,21 @@
   from {
     opacity: 0;
     scale: 0.92;
+  }
+}
+
+@keyframes hint-glow {
+  from {
+    opacity: 0.85;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes sheet-up {
+  from {
+    transform: translateY(100%);
   }
 }
 

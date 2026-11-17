@@ -1,0 +1,600 @@
+/* Lesson list, lesson player and rules screen. Mobile-first (375×667), with a wider two-column
+   lesson layout on PC (1366×768). Animations are turned off by global.css under reduced motion. */
+
+/* ---------- Shared page header ---------- */
+
+.page-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0 8px;
+}
+
+.page-bar__title {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.page-bar__title--stack {
+  display: flex;
+  flex-direction: column;
+  font-size: 1.0625rem;
+  line-height: 1.4;
+}
+
+.page-bar__eyebrow {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: rgb(246 239 220 / 0.7);
+}
+
+/* Inline card chips inside text: [AS] → A♠ */
+.chip {
+  display: inline-block;
+  min-width: 1.9em;
+  margin: 0 0.1em;
+  padding: 0 0.3em;
+  border-radius: 5px;
+  background: var(--color-card, #fffdf6);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.35);
+  font-family:
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    sans-serif;
+  font-weight: 800;
+  line-height: 1.45;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.chip--suit {
+  min-width: 1.5em;
+  padding: 0 0.2em;
+}
+
+/* ---------- Lesson list ---------- */
+
+.lessons,
+.rules {
+  flex: 1;
+  width: 100%;
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 8px 16px 24px;
+}
+
+.lessons__list {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.lesson-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  width: 100%;
+  min-height: 64px;
+  padding: 12px 14px;
+  border: 2px solid var(--color-cream-faint);
+  border-radius: var(--radius);
+  background: rgb(0 0 0 / 0.2);
+  text-align: left;
+  cursor: pointer;
+}
+
+.lesson-card:hover:not(:disabled) {
+  border-color: var(--color-gold);
+}
+
+.lesson-card:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.lesson-card--done {
+  border-color: rgb(232 182 62 / 0.7);
+}
+
+.lesson-card__badge {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgb(0 0 0 / 0.3);
+  font-weight: 800;
+  font-size: 1.0625rem;
+}
+
+.lesson-card--done .lesson-card__badge {
+  background: var(--color-gold);
+  color: var(--color-ink);
+}
+
+.lesson-card__body {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.lesson-card__number {
+  font-size: 0.8125rem;
+  color: rgb(246 239 220 / 0.7);
+}
+
+.lesson-card__done {
+  color: var(--color-gold);
+  font-weight: 700;
+}
+
+.lesson-card__title {
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+
+.lesson-card__goal {
+  font-size: 0.9375rem;
+  color: rgb(246 239 220 / 0.85);
+}
+
+.lesson-card__best {
+  margin-top: 2px;
+  font-size: 0.8125rem;
+  color: var(--color-gold);
+}
+
+.lessons__footer {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.switch {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: var(--tap-min);
+  cursor: pointer;
+}
+
+.switch input {
+  width: 22px;
+  height: 22px;
+  accent-color: var(--color-gold);
+}
+
+/* ---------- Lesson player ---------- */
+
+.lesson {
+  /* Smaller cards so the table and the lesson panel fit a phone screen together. */
+  --card-w: clamp(44px, min(11.5vw, 8.5dvh), 76px);
+  --card-h: calc(var(--card-w) * 1.4);
+  --trick-card-w: clamp(40px, min(11vw, 8dvh), 72px);
+  --back-w: clamp(14px, 3.8vw, 24px);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 6px 12px 12px;
+}
+
+.lesson__progress {
+  height: 6px;
+  margin-bottom: 8px;
+  border-radius: 999px;
+  background: rgb(0 0 0 / 0.3);
+  overflow: hidden;
+}
+
+.lesson__progress span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--color-gold);
+  transition: width 300ms var(--ease-out, ease);
+}
+
+.lesson__body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.lesson__table {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.lesson__trump {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 2px 6px;
+  border-radius: var(--radius);
+}
+
+.lesson__felt {
+  min-height: calc(var(--trick-card-w) * 3.3);
+}
+
+.lesson__hand {
+  border-radius: var(--radius);
+}
+
+.lesson__hand--turn {
+  box-shadow: inset 0 0 0 2px var(--color-gold);
+}
+
+.lesson__glow {
+  box-shadow:
+    0 0 0 2px var(--color-gold),
+    0 0 18px rgb(232 182 62 / 0.55);
+  animation: lesson-glow 1.2s ease-in-out infinite alternate;
+}
+
+.lesson__table .tracker {
+  max-width: none;
+  box-shadow: none;
+}
+
+.lesson__panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 16px;
+  background: rgb(0 0 0 / 0.22);
+}
+
+.lesson__text {
+  margin: 0;
+  font-size: 1.0625rem;
+  line-height: 1.7;
+}
+
+.lesson__text--big {
+  font-size: 1.1875rem;
+  font-weight: 700;
+}
+
+.lesson__heading {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.lesson__eyebrow {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--color-gold);
+}
+
+.lesson__waiting {
+  margin: 0;
+  font-size: 0.875rem;
+  color: rgb(246 239 220 / 0.7);
+}
+
+.lesson__next {
+  align-self: stretch;
+}
+
+.lesson__feedback {
+  padding: 8px 12px;
+  border-radius: var(--radius);
+  font-weight: 700;
+  animation: pop-in 200ms ease-out both;
+}
+
+.lesson__feedback--retry {
+  border: 2px solid var(--color-gold);
+  background: rgb(232 182 62 / 0.14);
+  animation: nudge 360ms ease-in-out both;
+}
+
+.lesson__feedback--correct {
+  background: rgb(46 160 90 / 0.3);
+}
+
+/* cardPick: big card buttons */
+.lesson__picks {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.pick-card {
+  width: clamp(60px, 19vw, 92px);
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  transition: transform 150ms ease;
+}
+
+.pick-card:hover:not(:disabled) {
+  transform: translateY(-6px);
+}
+
+.pick-card--wrong {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* Quiz and choice options */
+.lesson__options {
+  display: grid;
+  gap: 10px;
+}
+
+.option-btn {
+  min-height: 52px;
+  padding: 8px 14px;
+  border: 2px solid var(--color-cream-faint);
+  border-radius: var(--radius);
+  background: rgb(0 0 0 / 0.2);
+  font-size: 1.0625rem;
+  font-weight: 700;
+  line-height: 1.5;
+  text-align: left;
+  cursor: pointer;
+}
+
+.option-btn .chip {
+  font-size: 1.25rem;
+}
+
+.option-btn:hover:not(:disabled) {
+  border-color: var(--color-gold);
+}
+
+.option-btn:disabled {
+  cursor: default;
+}
+
+.option-btn--right {
+  border-color: #3fbf73;
+  background: rgb(46 160 90 / 0.3);
+}
+
+.option-btn--wrong {
+  border-color: #e0605a;
+  background: rgb(198 47 47 / 0.3);
+}
+
+.option-btn--faded {
+  opacity: 0.55;
+}
+
+.lesson__explain {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 4px;
+  animation: pop-in 200ms ease-out both;
+}
+
+.lesson__verdict {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 800;
+}
+
+/* Result */
+.lesson__result {
+  align-items: stretch;
+  text-align: center;
+}
+
+.lesson__score {
+  margin: 0;
+  font-size: 2rem;
+  font-weight: 800;
+}
+
+.lesson__result--pass .lesson__score {
+  color: var(--color-gold);
+}
+
+.lesson__actions {
+  display: grid;
+  gap: 10px;
+}
+
+/* Score example (lesson 6) */
+.score-example {
+  display: grid;
+  gap: 6px;
+  padding: 10px;
+  border-radius: var(--radius);
+  background: rgb(0 0 0 / 0.25);
+}
+
+.score-example__note {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--color-gold);
+}
+
+.score-example__team {
+  display: grid;
+  grid-template-columns: minmax(84px, auto) 1fr auto;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 6px;
+  border-radius: 8px;
+}
+
+.score-example__team--won {
+  background: rgb(232 182 62 / 0.18);
+}
+
+.score-example__name {
+  display: flex;
+  flex-direction: column;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.score-example__chose {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: rgb(246 239 220 / 0.75);
+}
+
+.score-example__tricks {
+  display: flex;
+  gap: 4px;
+}
+
+.score-example__trick {
+  width: 14px;
+  height: 20px;
+  border: 1px solid var(--color-cream-faint);
+  border-radius: 3px;
+}
+
+.score-example__trick--on {
+  border-color: var(--color-cream);
+  background: var(--color-cream);
+  animation: trick-in 260ms ease-out both;
+  animation-delay: calc(var(--i) * 90ms);
+}
+
+.score-example__count {
+  font-size: 1.25rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.score-example__result {
+  margin: 4px 0 0;
+  font-weight: 800;
+  animation: pop-in 260ms ease-out 800ms both;
+}
+
+/* ---------- Rules ---------- */
+
+.rules__body {
+  padding-bottom: 24px;
+  line-height: 1.75;
+}
+
+.rules__h2 {
+  margin: 22px 0 6px;
+  font-size: 1.1875rem;
+  color: var(--color-gold);
+}
+
+.rules__h3 {
+  margin: 16px 0 4px;
+  font-size: 1.0625rem;
+}
+
+.rules__p {
+  margin: 0 0 10px;
+}
+
+.rules__list {
+  margin: 0 0 10px;
+  padding-left: 1.4em;
+}
+
+.rules__list li + li {
+  margin-top: 4px;
+}
+
+.rules__table-wrap {
+  margin: 4px 0 12px;
+  overflow-x: auto;
+}
+
+.rules__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9375rem;
+}
+
+.rules__table th,
+.rules__table td {
+  padding: 6px 8px;
+  border-bottom: 1px solid rgb(246 239 220 / 0.15);
+  text-align: left;
+  vertical-align: top;
+}
+
+.rules__table th {
+  color: rgb(246 239 220 / 0.75);
+  font-size: 0.8125rem;
+}
+
+/* ---------- PC: the table on the left, the lesson panel on the right ---------- */
+
+@media (orientation: landscape) and (min-width: 900px) {
+  .lesson {
+    --card-w: clamp(56px, 9dvh, 88px);
+    --trick-card-w: clamp(52px, 8.5dvh, 82px);
+    --back-w: clamp(18px, 3dvh, 28px);
+  }
+
+  .lesson__body--table {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 380px;
+    align-items: start;
+    gap: 16px;
+  }
+
+  .lesson__body:not(.lesson__body--table) {
+    width: 100%;
+    max-width: 640px;
+    margin: 0 auto;
+  }
+}
+
+@keyframes lesson-glow {
+  from {
+    box-shadow:
+      0 0 0 2px var(--color-gold),
+      0 0 8px rgb(232 182 62 / 0.35);
+  }
+  to {
+    box-shadow:
+      0 0 0 2px var(--color-gold),
+      0 0 20px rgb(232 182 62 / 0.6);
+  }
+}
+
+@keyframes nudge {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-5px);
+  }
+  75% {
+    transform: translateX(5px);
+  }
+}
+
+@keyframes trick-in {
+  from {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+}
