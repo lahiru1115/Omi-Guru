@@ -6,6 +6,7 @@ import { DEFAULT_GAME_SETTINGS, type GameSettings, type PlayerView } from '../..
 import { createGameStore, HUMAN, type GameStoreDeps } from '../../src/store/gameStore';
 import { BOT_DELAY_MS, COLLECT_MS, TRICK_HOLD_MS } from '../../src/store/pacing';
 import type { SavedGame } from '../../src/store/savedGame';
+import type { StatsEvent } from '../../src/store/stats';
 
 function setup(overrides: Partial<GameSettings> = {}, extra: Partial<GameStoreDeps> = {}) {
   let saved: SavedGame | null = null;
@@ -270,5 +271,53 @@ describe('game store', () => {
     expect(store.getState().difficulty).toBe('medium');
     expect(store.getState().seed).toBe(9);
     expect(levels).toEqual(['medium', 'medium', 'medium']);
+  });
+
+  it('records a stats event for every round and one for the finished Real game', () => {
+    const events: StatsEvent[] = [];
+    const { store } = setup({}, { recordStats: (e) => events.push(e) });
+    store.getState().newGame({ difficulty: 'hard' });
+    playToEnd(store);
+    const game = store.getState().game!;
+    const rounds = events.filter((e) => e.type === 'round');
+    expect(rounds).toHaveLength(game.roundHistory.length);
+    expect(rounds.every((e) => e.type === 'round' && e.mode === 'real')).toBe(true);
+    expect(events.filter((e) => e.type === 'gameOver')).toEqual([
+      { type: 'gameOver', mode: 'real', difficulty: 'hard', won: game.scores[0] > game.scores[1] },
+    ]);
+    // Real games are not reviewed by the coach and have no hints.
+    expect(events.some((e) => e.type === 'review' || e.type === 'hint')).toBe(false);
+  });
+
+  it('records hints and a review for every Practice move, even without auto feedback', () => {
+    const events: StatsEvent[] = [];
+    const { store } = setup(
+      { practice: { highlightLegal: true, autoFeedback: false, allowUndo: true } },
+      { recordStats: (e) => events.push(e) },
+    );
+    store.getState().newGame({ mode: 'practice' });
+    for (let i = 0; i < 20; i++) {
+      runUntilWaiting();
+      const game = store.getState().game!;
+      if (game.phase === 'PLAYING' && game.round.turn === HUMAN) break;
+      if (game.phase === 'CHOOSE_TRUMP') store.getState().chooseTrump('S');
+    }
+    store.getState().requestHint();
+    expect(events.filter((e) => e.type === 'hint')).toHaveLength(1);
+    playToEnd(store);
+    expect(events.filter((e) => e.type === 'review').length).toBeGreaterThan(0);
+    expect(store.getState().coach).toBeNull();
+    expect(events.filter((e) => e.type === 'gameOver')).toHaveLength(1);
+  });
+
+  it('clearSave forgets the saved game only when no game is open', () => {
+    const { store, getSaved } = setup();
+    store.getState().newGame();
+    store.getState().clearSave();
+    expect(getSaved()).not.toBeNull();
+    store.getState().exitToHome();
+    store.getState().clearSave();
+    expect(getSaved()).toBeNull();
+    expect(store.getState().hasSave).toBe(false);
   });
 });

@@ -3,7 +3,12 @@
 import { create } from 'zustand';
 
 export type Screen =
-  { name: 'home' } | { name: 'lessons' } | { name: 'lesson'; id: string } | { name: 'rules' };
+  | { name: 'home' }
+  | { name: 'lessons' }
+  | { name: 'lesson'; id: string }
+  | { name: 'rules' }
+  | { name: 'settings' }
+  | { name: 'stats' };
 
 type NavStore = { screen: Screen; go: (screen: Screen) => void };
 

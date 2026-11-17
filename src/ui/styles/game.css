@@ -200,6 +200,8 @@
 .token--on {
   border-color: var(--color-gold);
   background: var(--color-gold);
+  /* A new point pops in when the round is scored (SPEC §8.4). */
+  animation: token-pop 420ms var(--ease-out) both;
 }
 
 .scorebar__team--them .token--on {
@@ -327,6 +329,19 @@
   width: var(--back-w);
   flex: none;
   animation: deal-in 320ms var(--ease-out) both;
+}
+
+/* Deal (SPEC §8.4): each block of 4 lands one card after another. */
+.seat__back:nth-child(4n + 2) {
+  animation-delay: 40ms;
+}
+
+.seat__back:nth-child(4n + 3) {
+  animation-delay: 80ms;
+}
+
+.seat__back:nth-child(4n + 4) {
+  animation-delay: 120ms;
 }
 
 .seat__back + .seat__back {
@@ -888,7 +903,8 @@
   right: 0;
   bottom: 0;
   z-index: 6;
-  padding: 0 8px calc(8px + env(safe-area-inset-bottom));
+  padding: 0 max(8px, env(safe-area-inset-right)) calc(8px + env(safe-area-inset-bottom))
+    max(8px, env(safe-area-inset-left));
   animation: sheet-up 220ms var(--ease-out) both;
 }
 
@@ -1032,7 +1048,9 @@
   z-index: 20;
   display: grid;
   place-items: center;
-  padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
+  /* Clear of the notch and home bar in both orientations. */
+  padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right))
+    max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
   background: rgb(0 0 0 / 0.55);
   animation: fade-in 200ms ease both;
 }
@@ -1065,6 +1083,12 @@
   margin: 0;
   font-size: 1.625rem;
   line-height: 1.5;
+}
+
+/* කැපෝති: the headline turns gold and bounces in with the pip burst. */
+.round-result--kapothi .round-result__headline {
+  color: var(--color-gold);
+  animation: kapothi-pop 700ms var(--ease-out) 120ms both;
 }
 
 .round-result__message {
@@ -1461,6 +1485,35 @@
 @keyframes fade-in {
   from {
     opacity: 0;
+  }
+}
+
+@keyframes token-pop {
+  0% {
+    transform: scale(0.2);
+  }
+  60% {
+    transform: scale(1.5);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes kapothi-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  45% {
+    opacity: 1;
+    transform: scale(1.18);
+  }
+  70% {
+    transform: scale(0.96);
+  }
+  100% {
+    transform: scale(1);
   }
 }
 

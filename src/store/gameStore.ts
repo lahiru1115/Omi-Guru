@@ -33,6 +33,8 @@ import { getPlayerView } from '../engine/view';
 import { BOT_DELAY_MS, COLLECT_MS, TRICK_HOLD_MS } from './pacing';
 import { clearSavedGame, loadSavedGame, saveGame, type SavedGame } from './savedGame';
 import { getSettings as defaultGetSettings } from './settingsStore';
+import type { StatsEvent } from './stats';
+import { recordStats } from './statsStore';
 
 export const HUMAN: Seat = 0;
 
@@ -91,6 +93,8 @@ export type GameStoreActions = {
   tapCard: (cardId: CardId) => void;
   tapTrickArea: () => void;
   nextRound: () => void;
+  /** Forgets the saved Real game (Settings → reset all data). Does nothing while a game is open. */
+  clearSave: () => void;
   /** Leaves the table. A Real game stays saved (unless it is over). */
   exitToHome: () => void;
   dismissToast: () => void;
@@ -120,6 +124,8 @@ export type GameStoreDeps = {
     load: () => SavedGame | null;
     clear: () => void;
   };
+  /** Receives stats events (SPEC §10.3). */
+  recordStats: (event: StatsEvent) => void;
 };
 
 function randomSeed(): number {
@@ -135,6 +141,7 @@ export const defaultDeps: GameStoreDeps = {
   getSettings: defaultGetSettings,
   newSeed: randomSeed,
   storage: { save: saveGame, load: loadSavedGame, clear: clearSavedGame },
+  recordStats,
 };
 
 /** Each bot seat gets its own seed derived from the game seed. */
@@ -227,7 +234,21 @@ export function createGameStore(overrides: Partial<GameStoreDeps> = {}): StoreAp
         ...(newRound ? { undoStack: [], botReasons: {} } : {}),
       });
       persist(next);
+      recordProgress(before, next);
       advance();
+    }
+
+    /** Sends stats events for a finished round and a finished game. */
+    function recordProgress(before: GameState, next: GameState): void {
+      const mode = get().mode;
+      if (next.roundHistory.length > before.roundHistory.length) {
+        const result = next.roundHistory[next.roundHistory.length - 1];
+        if (result) deps.recordStats({ type: 'round', mode, result });
+      }
+      if (next.phase === 'GAME_OVER' && before.phase !== 'GAME_OVER') {
+        const won = next.scores[0] > next.scores[1];
+        deps.recordStats({ type: 'gameOver', mode, difficulty: get().difficulty, won });
+      }
     }
 
     /** Schedules the next automatic step, or waits for the human. */
@@ -309,9 +330,12 @@ export function createGameStore(overrides: Partial<GameStoreDeps> = {}): StoreAp
       if (game && isPractice()) {
         const { practice } = deps.getSettings();
         const update: Partial<GameStoreData> = { hint: null, coach: null };
+        // Every Practice move is reviewed for the coach match rate, even without auto feedback.
+        const viewBefore = getPlayerView(game, HUMAN);
+        const review = reviewMove(viewBefore, cardId);
+        deps.recordStats({ type: 'review', verdict: review.verdict });
         if (practice.autoFeedback) {
-          const viewBefore = getPlayerView(game, HUMAN);
-          const content = reviewBubble(viewBefore, cardId, reviewMove(viewBefore, cardId));
+          const content = reviewBubble(viewBefore, cardId, review);
           update.coach = { kind: 'review', ...content, nonce: ++nonce };
         }
         if (practice.allowUndo) update.undoStack = [...get().undoStack, game];
@@ -413,6 +437,12 @@ export function createGameStore(overrides: Partial<GameStoreDeps> = {}): StoreAp
         dispatch({ type: 'NEXT_ROUND' });
       },
 
+      clearSave: () => {
+        if (get().game) return;
+        deps.storage.clear();
+        set({ hasSave: false });
+      },
+
       exitToHome: () => {
         cancelTimer();
         const { game } = get();
@@ -434,6 +464,7 @@ export function createGameStore(overrides: Partial<GameStoreDeps> = {}): StoreAp
         if (!game || !isPractice()) return;
         const view = getPlayerView(game, HUMAN);
         const hint = getHint(view);
+        deps.recordStats({ type: 'hint' });
         set({ hint, coach: { kind: 'hint', ...hintBubble(view, hint), nonce: ++nonce } });
       },
 

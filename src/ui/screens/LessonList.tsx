@@ -9,6 +9,7 @@ import { getSettings, useSettingsStore } from '../../store/settingsStore';
 import { BackIcon } from '../components/BackIcon';
 import { LanguageToggle } from '../components/LanguageToggle';
 import { LessonText } from '../components/LessonText';
+import '../styles/game.css';
 import '../styles/lesson.css';
 import { useT } from '../useT';
 

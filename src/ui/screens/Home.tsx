@@ -20,8 +20,7 @@ type Panel = 'menu' | 'learn' | 'difficulty' | 'confirm';
 
 /**
  * Home screen (SPEC §8.1). Continue appears when a saved game exists. Learn opens Lessons or
- * Practice (the Learning mode); Real game first asks for the difficulty (SPEC §7). Stats and
- * Settings stay disabled until M5.
+ * Practice (the Learning mode); Real game first asks for the difficulty (SPEC §7).
  */
 export function Home() {
   const t = useT();
@@ -145,10 +144,18 @@ export function Home() {
               >
                 {t('home.rules')}
               </button>
-              <button type="button" className="home__button home__button--small" disabled>
+              <button
+                type="button"
+                className="home__button home__button--small"
+                onClick={() => go({ name: 'stats' })}
+              >
                 {t('home.stats')}
               </button>
-              <button type="button" className="home__button home__button--small" disabled>
+              <button
+                type="button"
+                className="home__button home__button--small"
+                onClick={() => go({ name: 'settings' })}
+              >
                 {t('home.settings')}
               </button>
             </div>

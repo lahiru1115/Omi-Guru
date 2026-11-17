@@ -61,6 +61,8 @@ export function isLessonUnlocked(
 
 type ProgressStore = ProgressData & {
   recordQuiz: (id: string, score: number) => void;
+  /** Clears all progress in memory (used by Settings → reset all data). */
+  reset: () => void;
 };
 
 export const useProgressStore = create<ProgressStore>()((set, get) => ({
@@ -70,4 +72,5 @@ export const useProgressStore = create<ProgressStore>()((set, get) => ({
     set(next);
     saveJSON(STORAGE_KEYS.progress, next);
   },
+  reset: () => set(emptyProgress()),
 }));

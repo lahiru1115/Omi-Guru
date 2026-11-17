@@ -41,7 +41,9 @@ export function RoundResult({ result, target, onNext, isLastRound }: Props) {
   return (
     <div className="modal-backdrop">
       <div
-        className={`modal round-result ${result.winner === 0 ? 'round-result--win' : ''}`}
+        className={`modal round-result ${result.winner === 0 ? 'round-result--win' : ''} ${
+          kapothi ? 'round-result--kapothi' : ''
+        }`}
         role="dialog"
         aria-modal="true"
         aria-labelledby="round-result-title"

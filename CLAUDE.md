@@ -27,6 +27,7 @@ npm run test:sim   # run the long bot-vs-bot simulation tests
 npm run build      # production build (dist/)
 npm run preview    # preview the production build
 npm run lint       # ESLint
+npm run generate-pwa-assets  # regenerate PWA icons from public/logo.svg (PNGs are committed)
 ```
 
 The developer works on **Windows with PowerShell**. Give commands in PowerShell syntax. Don't use bash-only syntax.

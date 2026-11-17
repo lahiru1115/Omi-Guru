@@ -12,6 +12,8 @@ export type Settings = GameSettings;
 type SettingsActions = {
   setLanguage: (language: Language) => void;
   updateSettings: (patch: Partial<GameSettings>) => void;
+  /** Back to the defaults (used by Settings → reset all data). Not saved: the key is removed. */
+  resetSettings: () => void;
 };
 
 export const DEFAULT_SETTINGS: Settings = DEFAULT_GAME_SETTINGS;
@@ -33,6 +35,7 @@ export const useSettingsStore = create<Settings & SettingsActions>()((set, get) 
     set(patch);
     saveJSON(STORAGE_KEYS.settings, toSaved(get()));
   },
+  resetSettings: () => set(mergeSettings(undefined)),
 }));
 
 /** The current settings as plain data (for non-React callers such as the game store). */

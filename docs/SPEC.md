@@ -507,10 +507,17 @@ Partner (seat 2): **අමල්** · Right (seat 1): **කසුන්** · Lef
 Games played/won per difficulty, rounds won, කැපෝති for/against, trump-call success rate,
 practice hints used, coach match rate (% of human moves rated GOOD).
 
+Games, rounds, කැපෝති and trump calls count **Real** games only; hints and the coach match rate come from
+**Practice** (every Practice move is reviewed, even with auto feedback off). Lessons are not counted. A game
+counts when it reaches GAME_OVER. A trump call is a round where the player (seat 0) chose trumps; it succeeds
+when team 0 wins that round (a 4–4 tie is not a success).
+
 ---
 
 ## 11. PWA
-- `vite-plugin-pwa` with `registerType: 'autoUpdate'`. Precache all assets, including the font.
+- `vite-plugin-pwa` with `registerType: 'prompt'` (changed from `autoUpdate` in M5: the update toast below
+  asks first, so an update never reloads the page in the middle of a Practice game). Precache all assets,
+  including the font.
 - Manifest: name "ඕමි ගුරු · Omi Guru", short_name "Omi Guru", `display: standalone`,
   theme colour = the table green, icons 192/512 (maskable) generated from one original SVG logo.
 - SEO: page title "Omi Guru · ඕමි ගුරු | Learn Omi (Oomi / Oombi), the Sri Lankan card game". Put a meta

@@ -11,6 +11,7 @@ import { BackIcon } from '../components/BackIcon';
 import { LanguageToggle } from '../components/LanguageToggle';
 import { LessonText } from '../components/LessonText';
 import { parseInline, parseMarkdown, type Block } from '../markdown';
+import '../styles/game.css';
 import '../styles/lesson.css';
 import { useT } from '../useT';
 

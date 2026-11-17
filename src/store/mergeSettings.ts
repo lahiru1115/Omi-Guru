@@ -53,3 +53,23 @@ export function mergeSettings(saved: unknown): GameSettings {
     unlockAllLessons: pickBoolean(saved, 'unlockAllLessons', d.unlockAllLessons),
   };
 }
+
+/** The numeric house-rule settings that the Settings screen edits with steppers. */
+export type NumericSetting =
+  'targetScore' | 'trumpTeamWinPoints' | 'defenderWinPoints' | 'kapothiPoints' | 'tieBonus';
+
+/** Stepper bounds for each numeric setting (inclusive). */
+export const SETTING_BOUNDS: Readonly<Record<NumericSetting, { min: number; max: number }>> = {
+  targetScore: { min: 1, max: 30 },
+  trumpTeamWinPoints: { min: 0, max: 10 },
+  defenderWinPoints: { min: 0, max: 10 },
+  kapothiPoints: { min: 0, max: 10 },
+  tieBonus: { min: 0, max: 10 },
+};
+
+/** Rounds a stepper value to a whole number and keeps it inside the setting's bounds. */
+export function clampSetting(key: NumericSetting, value: number): number {
+  const { min, max } = SETTING_BOUNDS[key];
+  if (!Number.isFinite(value)) return min;
+  return Math.min(max, Math.max(min, Math.round(value)));
+}
