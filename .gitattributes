@@ -1,0 +1,8 @@
+# Keep LF line endings in the working tree on Windows (core.autocrlf=true),
+# so Prettier's endOfLine: "lf" check stays clean.
+* text=auto eol=lf
+
+*.woff binary
+*.woff2 binary
+*.png binary
+*.ico binary
