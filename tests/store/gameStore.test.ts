@@ -252,4 +252,23 @@ describe('game store', () => {
     store.getState().exitToHome();
     expect(vi.getTimerCount()).toBe(0);
   });
+
+  it('uses the difficulty setting by default, or the difficulty passed to newGame', () => {
+    const levels: string[] = [];
+    const createBot = (level: string, seed: number): Bot => {
+      levels.push(level);
+      return createEasyBot(seed);
+    };
+    const { store, getSaved } = setup({ botDifficulty: 'hard' }, { createBot });
+    store.getState().newGame();
+    expect(store.getState().difficulty).toBe('hard');
+    expect(levels).toEqual(['hard', 'hard', 'hard']);
+    expect(getSaved()?.difficulty).toBe('hard');
+
+    levels.length = 0;
+    store.getState().newGame({ difficulty: 'medium', seed: 9 });
+    expect(store.getState().difficulty).toBe('medium');
+    expect(store.getState().seed).toBe(9);
+    expect(levels).toEqual(['medium', 'medium', 'medium']);
+  });
 });

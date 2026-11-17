@@ -91,9 +91,11 @@ describe('Easy trump choice: the suit with the most cards', () => {
     expect(longestSuit(ids('AS KH QD JC'))).toBe('S'); // all 1: A is the highest
   });
 
-  it('every difficulty returns a working bot in M2', () => {
-    for (const level of ['easy', 'medium', 'hard'] as const) {
-      expect(createBot(level, 1).chooseTrump({ hand: ids('7C 8C 9C AS') } as never)).toBe('C');
-    }
+  it('Easy picks the longest suit; Medium and Hard use the SPEC §4.2 score', () => {
+    const view = { hand: ids('7C 8C 9C AS') } as never;
+    expect(createBot('easy', 1).chooseTrump(view)).toBe('C');
+    // Clubs 2×3 = 6, spades 2×1 + A4 = 6: the tie goes to the higher top card.
+    expect(createBot('medium', 1).chooseTrump(view)).toBe('S');
+    expect(createBot('hard', 1).chooseTrump(view)).toBe('S');
   });
 });

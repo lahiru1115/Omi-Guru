@@ -129,3 +129,84 @@
   font-weight: 700;
   text-align: center;
 }
+
+/* Difficulty picker (SPEC §7) */
+.difficulty {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.difficulty__options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.difficulty__title {
+  margin-bottom: 4px;
+  padding: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  text-align: center;
+  width: 100%;
+}
+
+.difficulty__option {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-height: 56px;
+  padding: 10px 16px;
+  border: 2px solid var(--color-cream-faint);
+  border-radius: var(--radius);
+  background: rgb(0 0 0 / 0.18);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.difficulty__option--selected {
+  border-color: var(--color-gold);
+  background: rgb(0 0 0 / 0.32);
+}
+
+.difficulty__option:focus-within {
+  outline: 3px solid var(--color-gold);
+  outline-offset: 2px;
+}
+
+/* Visually hidden but still focusable and announced. */
+.difficulty__radio {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+}
+
+.difficulty__name {
+  font-size: 1.125rem;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.difficulty__option--selected .difficulty__name {
+  color: var(--color-gold);
+}
+
+.difficulty__desc {
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  opacity: 0.9;
+}
+
+.difficulty__actions {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 12px;
+}

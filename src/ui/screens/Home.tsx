@@ -1,6 +1,9 @@
 import { useState } from 'react';
 import type { MessageKey } from '../../content/i18n/t';
+import type { BotDifficulty } from '../../engine/types';
 import { gameStore, useGameStore } from '../../store/gameStore';
+import { useSettingsStore } from '../../store/settingsStore';
+import { DifficultyPicker } from '../components/DifficultyPicker';
 import { LanguageToggle } from '../components/LanguageToggle';
 import '../styles/home.css';
 import { useT } from '../useT';
@@ -15,19 +18,30 @@ const SUITS = [
 
 const SECONDARY_ITEMS: readonly MessageKey[] = ['home.rules', 'home.stats', 'home.settings'];
 
+type Panel = 'menu' | 'difficulty' | 'confirm';
+
 /**
- * Home screen (SPEC §8.1). Continue appears when a saved game exists. Learn, Rules, Stats and
- * Settings stay disabled until their milestones.
+ * Home screen (SPEC §8.1). Continue appears when a saved game exists. Real game first asks for the
+ * difficulty (SPEC §7). Learn, Rules, Stats and Settings stay disabled until their milestones.
  */
 export function Home() {
   const t = useT();
   const hasSave = useGameStore((s) => s.hasSave);
-  const [confirming, setConfirming] = useState(false);
+  const savedDifficulty = useSettingsStore((s) => s.botDifficulty);
+  const updateSettings = useSettingsStore((s) => s.updateSettings);
+  const [panel, setPanel] = useState<Panel>('menu');
+  const [difficulty, setDifficulty] = useState<BotDifficulty>(savedDifficulty);
   const { newGame, continueGame } = gameStore.getState();
 
-  const startRealGame = () => {
-    if (hasSave) setConfirming(true);
-    else newGame();
+  const openPicker = () => {
+    setDifficulty(savedDifficulty);
+    setPanel('difficulty');
+  };
+
+  const startWithDifficulty = () => {
+    updateSettings({ botDifficulty: difficulty });
+    if (hasSave) setPanel('confirm');
+    else newGame({ difficulty });
   };
 
   return (
@@ -48,7 +62,15 @@ export function Home() {
           <h1 className="home__title">{t('app.title')}</h1>
         </div>
 
-        {confirming ? (
+        {panel === 'difficulty' && (
+          <DifficultyPicker
+            value={difficulty}
+            onChange={setDifficulty}
+            onStart={startWithDifficulty}
+            onBack={() => setPanel('menu')}
+          />
+        )}
+        {panel === 'confirm' && (
           <div className="home__confirm" role="alertdialog" aria-labelledby="home-confirm-text">
             <p id="home-confirm-text" className="home__confirm-text">
               {t('home.newGameConfirm')}
@@ -57,17 +79,18 @@ export function Home() {
               type="button"
               className="home__button home__button--primary"
               onClick={() => {
-                setConfirming(false);
-                newGame();
+                setPanel('menu');
+                newGame({ difficulty });
               }}
             >
               {t('home.confirmYes')}
             </button>
-            <button type="button" className="home__button" onClick={() => setConfirming(false)}>
+            <button type="button" className="home__button" onClick={() => setPanel('menu')}>
               {t('home.confirmNo')}
             </button>
           </div>
-        ) : (
+        )}
+        {panel === 'menu' && (
           <div className="home__menu">
             {hasSave && (
               <button
@@ -84,7 +107,7 @@ export function Home() {
             <button
               type="button"
               className={hasSave ? 'home__button' : 'home__button home__button--primary'}
-              onClick={startRealGame}
+              onClick={openPicker}
             >
               {t('home.realGame')}
             </button>

@@ -18,7 +18,6 @@ export default mergeConfig(
         },
         {
           // `npm run test:sim`: long bot-vs-bot simulations (SPEC §12).
-          // The script passes --passWithNoTests until the first sim tests land in M3.
           extends: true,
           test: {
             name: 'sim',
