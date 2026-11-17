@@ -1,0 +1,10 @@
+node_modules
+dist
+dev-dist
+coverage
+package-lock.json
+
+# Planning docs are written by hand. Don't reformat them.
+docs/
+plans/
+CLAUDE.md
