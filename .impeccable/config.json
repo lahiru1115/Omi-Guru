@@ -1,0 +1,17 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "src/ui/styles/game.css"
+        ],
+        "createdAt": "2026-11-17T09:13:56.417Z",
+        "reason": "Claude: .tracker__cell--mine is a 3px underline marking the player's own cards in the card-tracker grid (explained in the tracker legend), a data marker not a decorative card accent"
+      }
+    ]
+  }
+}

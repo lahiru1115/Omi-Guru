@@ -18,3 +18,6 @@ npm-debug.log*
 .idea/
 .DS_Store
 Thumbs.db
+
+# Impeccable design checker: local session cache
+.impeccable/hook.cache.json
