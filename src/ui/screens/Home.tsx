@@ -1,4 +1,6 @@
+import { useState } from 'react';
 import type { MessageKey } from '../../content/i18n/t';
+import { gameStore, useGameStore } from '../../store/gameStore';
 import { LanguageToggle } from '../components/LanguageToggle';
 import '../styles/home.css';
 import { useT } from '../useT';
@@ -14,11 +16,19 @@ const SUITS = [
 const SECONDARY_ITEMS: readonly MessageKey[] = ['home.rules', 'home.stats', 'home.settings'];
 
 /**
- * Placeholder Home screen (SPEC §8.1). The menu buttons are disabled until their screens
- * exist. "Continue" (home.continue) appears from M2, when a saved game exists.
+ * Home screen (SPEC §8.1). Continue appears when a saved game exists. Learn, Rules, Stats and
+ * Settings stay disabled until their milestones.
  */
 export function Home() {
   const t = useT();
+  const hasSave = useGameStore((s) => s.hasSave);
+  const [confirming, setConfirming] = useState(false);
+  const { newGame, continueGame } = gameStore.getState();
+
+  const startRealGame = () => {
+    if (hasSave) setConfirming(true);
+    else newGame();
+  };
 
   return (
     <main className="home">
@@ -38,21 +48,60 @@ export function Home() {
           <h1 className="home__title">{t('app.title')}</h1>
         </div>
 
-        <div className="home__menu">
-          <button type="button" className="home__button home__button--primary" disabled>
-            {t('home.learn')}
-          </button>
-          <button type="button" className="home__button" disabled>
-            {t('home.realGame')}
-          </button>
-          <div className="home__secondary">
-            {SECONDARY_ITEMS.map((key) => (
-              <button key={key} type="button" className="home__button home__button--small" disabled>
-                {t(key)}
-              </button>
-            ))}
+        {confirming ? (
+          <div className="home__confirm" role="alertdialog" aria-labelledby="home-confirm-text">
+            <p id="home-confirm-text" className="home__confirm-text">
+              {t('home.newGameConfirm')}
+            </p>
+            <button
+              type="button"
+              className="home__button home__button--primary"
+              onClick={() => {
+                setConfirming(false);
+                newGame();
+              }}
+            >
+              {t('home.confirmYes')}
+            </button>
+            <button type="button" className="home__button" onClick={() => setConfirming(false)}>
+              {t('home.confirmNo')}
+            </button>
           </div>
-        </div>
+        ) : (
+          <div className="home__menu">
+            {hasSave && (
+              <button
+                type="button"
+                className="home__button home__button--primary"
+                onClick={() => continueGame()}
+              >
+                {t('home.continue')}
+              </button>
+            )}
+            <button type="button" className="home__button" disabled>
+              {t('home.learn')}
+            </button>
+            <button
+              type="button"
+              className={hasSave ? 'home__button' : 'home__button home__button--primary'}
+              onClick={startRealGame}
+            >
+              {t('home.realGame')}
+            </button>
+            <div className="home__secondary">
+              {SECONDARY_ITEMS.map((key) => (
+                <button
+                  key={key}
+                  type="button"
+                  className="home__button home__button--small"
+                  disabled
+                >
+                  {t(key)}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </main>
   );

@@ -26,6 +26,17 @@ export function loadJSON(key: StorageKey): unknown {
   }
 }
 
+/** Removes a stored value. Returns `false` if storage is unavailable. */
+export function removeJSON(key: StorageKey): boolean {
+  try {
+    if (!globalThis.localStorage) return false;
+    globalThis.localStorage.removeItem(key);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 /** Stores a value as JSON. Returns `false` if storage is unavailable or full. */
 export function saveJSON(key: StorageKey, value: unknown): boolean {
   try {
