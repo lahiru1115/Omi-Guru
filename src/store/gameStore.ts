@@ -53,8 +53,11 @@ export type GameStoreData = {
 };
 
 export type GameStoreActions = {
-  /** Starts a new Real game (replaces any saved game). */
-  newGame: (seed?: number) => void;
+  /**
+   * Starts a new Real game (replaces any saved game). The difficulty defaults to the
+   * botDifficulty setting.
+   */
+  newGame: (options?: NewGameOptions) => void;
   /** Loads the saved game. Returns false if there is none. */
   continueGame: () => boolean;
   chooseTrump: (suit: Suit) => void;
@@ -65,6 +68,8 @@ export type GameStoreActions = {
   exitToHome: () => void;
   dismissToast: () => void;
 };
+
+export type NewGameOptions = { seed?: number; difficulty?: BotDifficulty };
 
 export type GameStore = GameStoreData & GameStoreActions;
 
@@ -261,10 +266,9 @@ export function createGameStore(overrides: Partial<GameStoreDeps> = {}): StoreAp
       heldTrick: null,
       hasSave: deps.storage.load() !== null,
 
-      newGame: (seed) => {
-        const gameSeed = (seed ?? deps.newSeed()) >>> 0;
-        // M2 has only Easy bots; M3 adds the difficulty picker before a Real game.
-        const difficulty: BotDifficulty = 'easy';
+      newGame: (options = {}) => {
+        const gameSeed = (options.seed ?? deps.newSeed()) >>> 0;
+        const difficulty = options.difficulty ?? deps.getSettings().botDifficulty;
         start(createGame(deps.getSettings(), gameSeed), difficulty, gameSeed);
         persist(get().game as GameState);
         advance();

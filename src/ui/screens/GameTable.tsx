@@ -51,7 +51,11 @@ export function GameTable() {
 
   if (phase === 'GAME_OVER' && settled && resultSeenForSeed === seed) {
     return (
-      <GameOver game={game} onPlayAgain={() => actions.newGame()} onHome={actions.exitToHome} />
+      <GameOver
+        game={game}
+        onPlayAgain={() => actions.newGame({ difficulty: gameStore.getState().difficulty })}
+        onHome={actions.exitToHome}
+      />
     );
   }
 
